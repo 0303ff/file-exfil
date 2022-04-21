@@ -1,8 +1,9 @@
-from socket import *
+import socket
 import base64, getpass, argparse
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import sys
 
 def keygen():
     global f
@@ -17,33 +18,46 @@ def keygen():
     key = base64.urlsafe_b64encode(kdf.derive(password))
     f = Fernet(key)
 
+
 def Serv(port, file):
     keygen()
     host = ""
-    buf = 1024
+    buf = 1000000000 # < 1 gig / change this based on the size of your file. 
     addr = (host, int(port))
-    UDPSock = socket(AF_INET, SOCK_DGRAM)
-    UDPSock.bind(addr)
+    Sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    Sock.bind(addr)
     print("Waiting to receive file...")
+    #(data, addr) = Sock.recvfrom(buf)
+    Sock.listen(5)
+    conn, C_addr = Sock.accept()
+    print(f"Connection from: {C_addr}")
     while True:
-        (data, addr) = UDPSock.recvfrom(buf)
+        data=conn.recv(buf, socket.MSG_WAITALL)
+        if data == b"":
+            break
+        #print(data)
         msg = f.decrypt(data)
-        with open(file, 'wb') as decrypted_file:
-            decrypted_file.write(msg)
-        break
-    UDPSock.close()
+    with open(file, 'wb') as decrypted_file:
+        decrypted_file.write(msg)
+    print("File transfer complete")
+    Sock.close()
 
 def Client(ip, port, file):
     keygen()
     addr = (ip, int(port))
-    UDPSock = socket(AF_INET, SOCK_DGRAM)
+    Sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    Sock.connect(addr)
     while True:
         with open(file, 'rb') as fs:
             file = fs.read()
         ciphertext = f.encrypt(file)
-        UDPSock.sendto(ciphertext, addr)
+        #print(ciphertext)
+        #print(len(ciphertext))
+        #print("done")
+        Sock.sendall(ciphertext)
+        #Sock.shutdown(socket.SHUT_RDWR)
         break
-    UDPSock.close()
+    #Sock.close()
 
 def main():
 
