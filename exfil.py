@@ -3,7 +3,6 @@ import base64, getpass, argparse
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import sys
 
 def keygen():
     global f
@@ -27,7 +26,6 @@ def Serv(port, file):
     Sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     Sock.bind(addr)
     print("Waiting to receive file...")
-    #(data, addr) = Sock.recvfrom(buf)
     Sock.listen(5)
     conn, C_addr = Sock.accept()
     print(f"Connection from: {C_addr}")
@@ -35,7 +33,6 @@ def Serv(port, file):
         data=conn.recv(buf, socket.MSG_WAITALL)
         if data == b"":
             break
-        #print(data)
         msg = f.decrypt(data)
     with open(file, 'wb') as decrypted_file:
         decrypted_file.write(msg)
@@ -51,13 +48,8 @@ def Client(ip, port, file):
         with open(file, 'rb') as fs:
             file = fs.read()
         ciphertext = f.encrypt(file)
-        #print(ciphertext)
-        #print(len(ciphertext))
-        #print("done")
         Sock.sendall(ciphertext)
-        #Sock.shutdown(socket.SHUT_RDWR)
         break
-    #Sock.close()
 
 def main():
 
